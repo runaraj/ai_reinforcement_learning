@@ -4,6 +4,10 @@ from pprint import pprint
 import numpy
 import math
 
+
+'''
+NOT USED/FINISHED
+'''
 fileDir = os.path.dirname(os.path.realpath('__file__'))
 filename = os.path.join(fileDir, 'training_logs/conceder_conceder.json')
 training_folder = os.path.join(fileDir, 'training_logs')
