@@ -30,6 +30,7 @@ _SILENT = 'silent'
 _SELFISH = 'selfish'
 _FORTUNATE = 'fortunate'
 _UNFORTUNATE = 'unfortunate'
+_NICE = 'nice'
 
 # Strategy order: Conceder, HardHeaded, TFT, Random
 # Never changes
@@ -38,7 +39,7 @@ TRANSITION = numpy.identity(4)
 INITIAL_STATE = numpy.matrix([0.25, 0.25, 0.25, 0.25])
 STATE = INITIAL_STATE
 # Probability of evidence given state
-# Movetype order: Concede, Selfish, Fortunate, Unfortunate, Selfish
+# Movetype order: Concede, Selfish, Fortunate, Unfortunate, Silent
 EVIDENCE_PROB = numpy.matrix(
     # Conceder
     [[0.6, 0.1, 0.1, 0.1, 0.1],
@@ -66,30 +67,35 @@ TFT_CONDITIONAL_EVIDENCE_PROB = numpy.matrix([
 ])
 
 OBSERVATIONS = []
-def train_model(filename):
+def get_obs(filename):
     # name = filename.split('.')[0].split('_')
     with open(folderPath + filename) as f:
         data = json.load(f)
     for i in range(len(data['bids'])):
         if not 'agent1' in data['bids'][i].keys():
-            OBSERVATIONS.append(['ACCEPT', 'None'])
+            # OBSERVATIONS.append(['ACCEPT', 'None'])
+            continue
             break
         observation_a1 = helpers.get_movetype(data, agent=1, roundNr=i)
         if not 'agent2' in data['bids'][i].keys():
-            OBSERVATIONS.append([observation_a1, 'ACCEPT'])
+            # OBSERVATIONS.append([observation_a1, 'ACCEPT'])
+            continue
             break
         observation_a2 = helpers.get_movetype(data, agent=2, roundNr=i)
+        observation_a1 = movetype_to_number(observation_a1)
+        # print(observation_a1)
+        observation_a2 = movetype_to_number(observation_a2)
         OBSERVATIONS.append([observation_a1, observation_a2])
     # pprint(OBSERVATIONS)
-    belief = None
-    belief_string = ""
-    for i in range(1, len(OBSERVATIONS)-1):
-        print(normalize(prob_observations(i)))
-        belief = normalize(prob_observations(i))
-        print(belief.index(max(belief)))
-        belief_string = number_to_strategy(belief.index(max(belief)))
-        print(belief_string)
-    EVIDENCE_PROB = update_model(belief)
+    return OBSERVATIONS[0:len(OBSERVATIONS)-1]
+    # belief = None
+    # belief_string = ""
+    # for i in range(1, len(OBSERVATIONS)-1):
+    #     print(normalize(prob_observations(i)))
+    #     belief = normalize(prob_observations(i))
+    #     print(belief.index(max(belief)))
+    #     belief_string = number_to_strategy(belief.index(max(belief)))
+    #     print(belief_string)
 
 def main():
     fileNames = os.listdir(training_folder)
@@ -98,7 +104,7 @@ def main():
         testFileName = fileNames[FILE_TO_LEAVE_OUT]
         del fileNames[FILE_TO_LEAVE_OUT]
     for name in fileNames:
-        train_model(name)
+        get_obs(name)
         print(name)
         if True:
             break
@@ -130,6 +136,7 @@ def normalize(array):
 # P(evidence | state)
 
 def movetype_to_number(m):
+    # print(m)
     if m == _CONCEDE:
         return 0
     if m == _SELFISH:
@@ -140,6 +147,10 @@ def movetype_to_number(m):
         return 3
     if m == _SILENT:
         return 4
+    if m == _NICE:
+        return 5
+    if m == 'ACCEPT':
+        return -1
 
 def number_to_strategy(n):
     if n==0:

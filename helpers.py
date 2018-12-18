@@ -9,6 +9,7 @@ _SILENT = 'silent'
 _SELFISH = 'selfish'
 _FORTUNATE = 'fortunate'
 _UNFORTUNATE = 'unfortunate'
+_NICE = 'nice'
 
 '''
 NOT USED/FINISHED
@@ -29,7 +30,9 @@ def get_movetype(data, agent, roundNr):
     self_diff = util_new_own_bid - util_prev_own_bid
     opp_diff = opp_util_new_own_bid - opp_util_prev_own_bid
 
-    if (abs(self_diff)==0.0) and (abs(opp_diff)==0.0):
+    if (abs(self_diff)==0.0):
+        if opp_diff > 0.08:
+            return _NICE
         return _SILENT
     else:
         # Self utility is worse
@@ -76,12 +79,3 @@ def prob_of_state(prevState, state):
     if prevState == state:
         return 1
     return 0
-
-
-
-def forward():
-    pass
-
-
-def backward():
-    pass

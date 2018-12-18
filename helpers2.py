@@ -7,20 +7,25 @@ import numpy
 @evidence = list of evidence
 '''
 def forward(t, init, obs_state, evidence):
-    alpha = numpy.zeros((len(evidence), init.shape[0]))
+    alpha = numpy.zeros((len(evidence), init.shape[1]))
     # first row is what we know initially
     # print(obs_state)
     # print(obs_state[:, evidence[0]])
+    # print(alpha)
+    # print(init)
+    # print(alpha[0,:])
+    print(evidence)
+    # print(obs_state[:, evidence[0]])
+    # print(init*obs_state[:, evidence[0]])
     alpha[0, :] = init * obs_state[:, evidence[0]]
     alpha[0, :] = normalize(alpha[0, :])
     for i in range(1, len(evidence)):
-
         for j in range(len(init)):
             for k in range(len(init)):
                 alpha[i, j] += alpha[i-1, k]*t[k,j]*obs_state[j, evidence[i]]
             alpha[j, :] = normalize(alpha[j, :])
     alpha = numpy.round(alpha, 3)
-    return alpha
+    return alpha, numpy.sum(alpha[len(evidence)-1, :])
 
 '''
 @t = transition probs
