@@ -6,6 +6,7 @@ from pprint import pprint
 _CONCEDE = 'concede'
 _SILENT = 'silent'
 _SELFISH = 'selfish'
+_BAD = 'bad'
 _FORTUNATE = 'fortunate'
 _UNFORTUNATE = 'unfortunate'
 _NICE = 'nice'
@@ -15,6 +16,21 @@ _CONCEDER = 'conceder'
 _HARDHEADED = 'hardheaded'
 _RANDOM = 'random'
 _TFT = 'tft'
+
+
+_PRE = {
+    _CONCEDER: [0.7, 0.0, 0.0, 0.1, 0.05, 0.05, 0.05, 0.05],
+    _HARDHEADED: [0.01, 0.04, 0.01, 0.04, 0.05, 0.3, 0.05, 0.5],
+    _RANDOM: [0.15, 0.15, 0.15, 0.15, 0.15, 0.09, 0.15, 0.01],
+    _TFT: [0.2, 0.2, 0.05, 0.05, 0.05, 0.15, 0.1, 0.2]
+}
+
+
+# Concede-selfish-fortune-unfortune-nice-unchange-bad-silent
+# _CONCEDER_PRE = [0.7, 0.0, 0.0, 0.1, 0.05, 0.05, 0.05, 0.05]
+# _HARDHEADED_PRE = [0.01, 0.04, 0.01, 0.04, 0.05, 0.4, 0.05, 0.4]
+# _RANDOM_PRE = [0.15, 0.15, 0.15, 0.15, 0.15, 0.09, 0.15, 0.01]
+# _TFT_PRE = [0.2, 0.2, 0.05, 0.05, 0.05, 0.15, 0.1, 0.2]
 
 fileDir = os.path.dirname(os.path.realpath('__file__'))
 folderPath = os.path.join(fileDir, 'training_logs/')
@@ -48,8 +64,29 @@ def get_obs(filename):
 # get movetype for @agent in @roundNr
 def get_movetype(data, agent, roundNr):
     opponent = 1
+    name = 'agent2'
     if agent == 1:
         opponent = 2
+        name = 'agent1'
+
+    try:
+        prev_own_bid = data['bids'][roundNr-1][name].split(',')
+        new_own_bid = data['bids'][roundNr][name].split(',')
+        equal = True
+        for i in range(len(prev_own_bid)):
+            if (prev_own_bid[i] != new_own_bid[i]):
+                equal = False
+                break
+        if equal:
+            return _UNCHANGED
+
+        # print()
+        # print(prev_own_bid)
+        # print(new_own_bid)
+    except Exception:
+        pass
+    
+
 
     util_prev_own_bid = get_utility(data, roundNr-1, agent, agent)
     util_new_own_bid = get_utility(data, roundNr, agent, agent)
@@ -59,26 +96,49 @@ def get_movetype(data, agent, roundNr):
 
     self_diff = util_new_own_bid - util_prev_own_bid
     opp_diff = opp_util_new_own_bid - opp_util_prev_own_bid
-
-    if abs(self_diff)==0.0:
-        if abs(opp_diff)==0.0:
-            return _UNCHANGED
-        if opp_diff > 0.08:
-            return _NICE
+    # self is same
+    if 0<abs(self_diff)<0.08 and 0<abs(opp_diff)<0.08:
         return _SILENT
-    else:
-        # Self utility is worse
-        if self_diff < 0:
-            if opp_diff < 0:
-                return _UNFORTUNATE
-            else:
-                return _CONCEDE
+    if abs(self_diff)==0.0:
+        # if abs(opp_diff)==0.0:
+            # return _UNCHANGED
+        if opp_diff<0:
+            return _BAD
         else:
-            # self is better
-            if opp_diff < 0:
-                return _SELFISH
-            else:
-                return _FORTUNATE
+            return _CONCEDE
+    # self is worse
+    elif self_diff<0:
+        if opp_diff<=0:
+            return _UNFORTUNATE
+        else:
+            return _CONCEDE
+    # self is better
+    else:
+        if opp_diff<=0:
+            return _SELFISH
+        else:
+            return _FORTUNATE
+
+    #     if opp_diff<0:
+    #         return _BAD
+    #     if opp_diff>0:
+    #         return _NICE
+    #     #if opp_diff > 0.08:
+    #     #    return _NICE
+    #     #return _SILENT
+    # else:
+    #     # Self utility is worse
+    #     if self_diff < 0:
+    #         if opp_diff < 0:
+    #             return _UNFORTUNATE
+    #         else:
+    #             return _CONCEDE
+    #     else:
+    #         # self is better
+    #         if opp_diff < 0:
+    #             return _SELFISH
+    #         else:
+    #             return _FORTUNATE
 
 # gets the utility of @agent in @roundNr for bid given by @bidder
 def get_utility(data, roundNr, agent, bidder):
@@ -114,12 +174,14 @@ def movetype_to_number(m):
         return 2
     if m == _UNFORTUNATE:
         return 3
-    if m == _SILENT:
-        return 4
     if m == _NICE:
-        return 5
+        return 4
     if m==_UNCHANGED:
+        return 5
+    if m==_BAD:
         return 6
+    if m == _SILENT:
+        return 7
 
 def number_to_strategy(n):
     if n==0:
@@ -167,6 +229,7 @@ def test(fileName, evGivenS):
     a2 = [0,0,0,0]
     for i in range(len(obs)):
         a1_move = movetype_to_number(obs[i][0])
+        # print(a1_move)
         a2_move = movetype_to_number(obs[i][1])
         for k in evGivenS.keys():
             a1_prob = evGivenS[k][a1_move]
@@ -180,14 +243,15 @@ def test(fileName, evGivenS):
     print(a1)
     print(a2)
 
-FILE_TO_LEAVE_OUT = 0
+FILE_TO_LEAVE_OUT = 1
 
 def main():
     freqs = {
-        _CONCEDER: [0,0,0,0,0,0,0],
-        _HARDHEADED: [0,0,0,0,0,0,0],
-        _TFT: [0,0,0,0,0,0,0],
-        _RANDOM: [0,0,0,0,0,0,0]
+        # Concede-selfish-fortune-unfortune-nice-unchange-bad(-silent)
+        _CONCEDER: [1,1,1,1,1,1,1,1],
+        _HARDHEADED: [1,1,1,1,1,1,1,1],
+        _TFT: [1,1,1,1,1,1,1,1],
+        _RANDOM: [1,1,1,1,1,1,1,1]
     }
     fileNames = os.listdir(training_folder)
     testFileName = ""
@@ -203,17 +267,39 @@ def main():
         for i in range(len(obs)):
             a1 = obs[i][0]
             a2 = obs[i][1]
+            print(a1)
             a1 = movetype_to_number(a1)
             a2 = movetype_to_number(a2)
             freqs[strat1][a1] += 1
+            # print(a1_count)
             freqs[strat2][a2] += 1
+            old_a1 = a1
+            old_a2 = a2
+    print("Concede-selfish-fortune-unfortune-nice-unchange-bad(-silent)")
     pprint(freqs)
     for k in freqs.keys():
         freqs[k] = normalize(freqs[k])
-    pprint(freqs)
+    # pprint(freqs)
     print(testFileName)
+    for k in freqs.keys():
+        freqs[k] = combine_and_normalize(freqs[k], _PRE[k])
+    pprint(freqs)
     if testFileName != "":
         test(testFileName, freqs)
+
+
+
+
+def combine_and_normalize(list1, list2):
+    if len(list1) != len(list2):
+        print("LISTS MUST BE SAME LENGTH")
+        return
+    out = []
+    for i in range(len(list1)):
+        out.append(list1[i] + list2[i])
+    out = normalize(out)
+    return out
+
 
 main()
             
