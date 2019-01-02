@@ -55,7 +55,6 @@ for name in fileNames:
 
         freqs[strat2][a2] += 1
 print("Concede-selfish-fortune-unfortune-nice-silent-unchange")
-pprint(freqs)
 for k in freqs.keys():
     freqs[k] = u.normalize(freqs[k])
 
