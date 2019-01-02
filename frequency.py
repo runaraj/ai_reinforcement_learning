@@ -19,12 +19,12 @@ _RANDOM = 'random'
 _TFT = 'tft'
 
 # Pre probabilities of how the different agents may act. Based on pre knowledge
-# concede - self - fortun - unfortun - nice - silent | - unchange - bad
+# concede - self - fortun - unfortun - nice - silent - unchange
 _PRE = {
-    _CONCEDER: [0.7, 0.05, 0.05, 0.1, 0.05, 0.05],
-    _HARDHEADED: [0.01, 0.09, 0.075, 0.075, 0.05, 0.7],
-    _RANDOM: [0.2, 0.2, 0.15, 0.15, 0.15, 0.15],
-    _TFT: [0.2, 0.2, 0.15, 0.15, 0.15, 0.15]
+    _CONCEDER: [0.7, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05],
+    _HARDHEADED: [0.01, 0.04, 0.05, 0.05, 0.05, 0.6, 0.2],
+    _RANDOM: [0.2, 0.2, 0.15, 0.15, 0.1, 0.05, 0.15],
+    _TFT: [0.2, 0.2, 0.15, 0.1, 0.1, 0.15, 0.1]
 }
 
 
@@ -73,18 +73,18 @@ def get_movetype(data, agent, roundNr):
         name = 'agent1'
 
     # if the new bid as exactly the same as the new one the bid is unchanged
-    # try:
-    #     prev_own_bid = data['bids'][roundNr-1][name].split(',')
-    #     new_own_bid = data['bids'][roundNr][name].split(',')
-    #     equal = True
-    #     for i in range(len(prev_own_bid)):
-    #         if (prev_own_bid[i] != new_own_bid[i]):
-    #             equal = False
-    #             break
-    #     if equal:
-    #         return _UNCHANGED
-    # except Exception:
-    #     pass
+    try:
+        prev_own_bid = data['bids'][roundNr-1][name].split(',')
+        new_own_bid = data['bids'][roundNr][name].split(',')
+        equal = True
+        for i in range(len(prev_own_bid)):
+            if (prev_own_bid[i] != new_own_bid[i]):
+                equal = False
+                break
+        if equal:
+            return _UNCHANGED
+    except Exception:
+        pass
     
 
 
@@ -97,7 +97,7 @@ def get_movetype(data, agent, roundNr):
     self_diff = util_new_own_bid - util_prev_own_bid
     opp_diff = opp_util_new_own_bid - opp_util_prev_own_bid
     # if both utilities change by very little it is a silent move
-    if 0<abs(self_diff)<0.08 and 0<abs(opp_diff)<0.08:
+    if 0<abs(self_diff)<0.05 and 0<abs(opp_diff)<0.05:
         return _SILENT
     if abs(self_diff)==0.0:
         # If our utility is the same and opponent is worse it is a selfish move
@@ -106,7 +106,7 @@ def get_movetype(data, agent, roundNr):
         else:
             # If our utility is the same and opponent is better it is a concession
             # We don't have nice moves
-            return _CONCEDE
+            return _NICE
     # self is worse
     elif self_diff<0:
         # If our and opponent's utility is worse it is unfortunate
@@ -186,8 +186,6 @@ def movetype_to_number(m):
         return 5
     if m==_UNCHANGED:
         return 6
-    if m==_BAD:
-        return 7
     
 
 # Convert number @n to strategy string
@@ -257,10 +255,10 @@ FILE_TO_LEAVE_OUT = 0
 
 def main():
     freqs = {
-        _CONCEDER: [1,1,1,1,1,1],
-        _HARDHEADED: [1,1,1,1,1,1],
-        _TFT: [1,1,1,1,1,1],
-        _RANDOM: [1,1,1,1,1,1]
+        _CONCEDER: [1,1,1,1,1,1,1],
+        _HARDHEADED: [1,1,1,1,1,1,1],
+        _TFT: [1,1,1,1,1,1,1],
+        _RANDOM: [1,1,1,1,1,1,1]
     }
     fileNames = os.listdir(training_folder)
     testFileName = ""
@@ -282,7 +280,7 @@ def main():
             freqs[strat1][a1] += 1
             # print(a1_count)
             freqs[strat2][a2] += 1
-    print("Concede-selfish-fortune-unfortune-nice-silent-unchange-bad")
+    print("Concede-selfish-fortune-unfortune-nice-silent-unchange")
     pprint(freqs)
     for k in freqs.keys():
         freqs[k] = normalize(freqs[k])
