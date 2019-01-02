@@ -3,6 +3,7 @@ import json
 import os
 from pprint import pprint
 
+# name variables
 _CONCEDE = 'concede'
 _SILENT = 'silent'
 _SELFISH = 'selfish'
@@ -17,7 +18,7 @@ _HARDHEADED = 'hardheaded'
 _RANDOM = 'random'
 _TFT = 'tft'
 
-
+# Pre probabilities of how the different agents may act. Based on pre knowledge
 _PRE = {
     _CONCEDER: [0.7, 0.0, 0.0, 0.1, 0.05, 0.05, 0.05, 0.05],
     _HARDHEADED: [0.01, 0.04, 0.01, 0.04, 0.05, 0.3, 0.05, 0.5],
@@ -39,6 +40,7 @@ training_folder = os.path.join(fileDir, 'training_logs')
 
 EVIDENCE_GIVEN_STATE = {}
 
+# get movetypes from @filename and return them in a list
 def get_obs(filename):
     OBSERVATIONS = []
     # name = filename.split('.')[0].split('_')
@@ -69,6 +71,7 @@ def get_movetype(data, agent, roundNr):
         opponent = 2
         name = 'agent1'
 
+    # if the new bid as exactly the same as the new one the bid is unchanged
     try:
         prev_own_bid = data['bids'][roundNr-1][name].split(',')
         new_own_bid = data['bids'][roundNr][name].split(',')
@@ -79,10 +82,6 @@ def get_movetype(data, agent, roundNr):
                 break
         if equal:
             return _UNCHANGED
-
-        # print()
-        # print(prev_own_bid)
-        # print(new_own_bid)
     except Exception:
         pass
     
@@ -96,27 +95,32 @@ def get_movetype(data, agent, roundNr):
 
     self_diff = util_new_own_bid - util_prev_own_bid
     opp_diff = opp_util_new_own_bid - opp_util_prev_own_bid
-    # self is same
+    # if both utilities change by very little it is a silent move
     if 0<abs(self_diff)<0.08 and 0<abs(opp_diff)<0.08:
         return _SILENT
     if abs(self_diff)==0.0:
-        # if abs(opp_diff)==0.0:
-            # return _UNCHANGED
+        # If our utility is the same and opponent is worse it is a bad move
         if opp_diff<0:
             return _BAD
         else:
+            # If our utility is the same and opponent is better it is a concession
+            # We don't have nice moves
             return _CONCEDE
     # self is worse
     elif self_diff<0:
+        # If our and opponent's utility is worse it is unfortunate
         if opp_diff<=0:
             return _UNFORTUNATE
         else:
+            # If ours is worse and opponent is better it is a concession
             return _CONCEDE
     # self is better
     else:
+        # If ours is better and opponent is worse it is selfish
         if opp_diff<=0:
             return _SELFISH
         else:
+        # If ours and opponent is better it is fortunate
             return _FORTUNATE
 
     #     if opp_diff<0:
@@ -164,6 +168,7 @@ def get_utility(data, roundNr, agent, bidder):
     except Exception:
         return 0.0
 
+# Convert string movetype @m to number
 def movetype_to_number(m):
     # print(m)
     if m == _CONCEDE:
@@ -183,6 +188,7 @@ def movetype_to_number(m):
     if m == _SILENT:
         return 7
 
+# Convert number @n to strategy string
 def number_to_strategy(n):
     if n==0:
         return _CONCEDER
@@ -193,6 +199,7 @@ def number_to_strategy(n):
     if n==3:
         return _RANDOM
 
+# Convert strategy string @s to number
 def strategy_to_number(s):
     if s == _CONCEDER:
         return 0
@@ -203,7 +210,7 @@ def strategy_to_number(s):
     if s == _RANDOM:
         return 3
 
-
+# Get strategy name from string @s. E.g. input 'Conceder1' will return 'Conceder'
 def get_strat_name(s):
     if _CONCEDER in s:
         return _CONCEDER
@@ -214,6 +221,7 @@ def get_strat_name(s):
     if _RANDOM in s:
         return _RANDOM
 
+# Returns normalized version of input array @arr
 def normalize(arr):
     s = sum(arr)
     out = []
@@ -288,8 +296,8 @@ def main():
         test(testFileName, freqs)
 
 
-
-
+# Takes two lists of equal length as arguments
+# Adds the two lists element by element and returns the normalized result
 def combine_and_normalize(list1, list2):
     if len(list1) != len(list2):
         print("LISTS MUST BE SAME LENGTH")
