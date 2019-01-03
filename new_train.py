@@ -90,6 +90,7 @@ for name in fileNames:
             # if prob(obs | thetanew) > prob(obs | thetaold), update
     if prob_sequence(obs, prob, strat1, 0) < prob_sequence(obs, old_prob, strat1, 0):
         prob = old_prob
+    #old_prob = prob <------ maybe do this here?
 
     for j in range(len(prob[strat2])):
         prob[strat2][j] = freqs[strat2][j] / (sum(freqs[strat2])-freqs[strat2][j])
