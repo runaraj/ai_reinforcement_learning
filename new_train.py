@@ -13,7 +13,7 @@ def prob_sequence(obs, prob, strat, x):
         #print('prob is ', prob[strat][a])
         p = p * prob[strat][a]
     #print('prob is: ', p)
-    return p 
+    return p
 
 
 # name variables
@@ -54,15 +54,18 @@ prob = {
 
 fileNames = os.listdir(training_folder)
 testFileName = ""
-
-for name in fileNames:
-    print(name)
-    freqs = {
+freqs = {
         _CONCEDER: [1, 1, 1, 1, 1, 1, 1],
         _HARDHEADED: [1, 1, 1, 1, 1, 1, 1],
         _TFT: [1, 1, 1, 1, 1, 1, 1],
         _RANDOM: [1, 1, 1, 1, 1, 1, 1]
     }
+
+for name in fileNames:
+    print(name)
+    freqs[_CONCEDER] = [1, 1, 1, 1, 1, 1, 1]
+    freqs[_HARDHEADED] = [1, 1, 1, 1, 1, 1, 1]
+    freqs[_RANDOM] = [1, 1, 1, 1, 1, 1, 1]
 
     old_prob = prob
 
