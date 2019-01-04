@@ -111,7 +111,7 @@ for name in fileNames:
         freqs[strat2][a2] += 1
     #pprint(freqs)
     for j in range(len(prob[strat1])):
-        prob[strat1][j] = freqs[strat1][j] / (sum(freqs[strat1]) - freqs[strat1][j])
+        prob[strat1][j] = freqs[strat1][j] / (sum(freqs[strat1])) #- freqs[strat1][j])
         prob[strat1][j] = prob[strat1][j] + _PRE[strat1][j]  # toglierlo?
     prob[strat1] = u.normalize(prob[strat1])
             # if prob(obs | thetanew) > prob(obs | thetaold), update
@@ -123,7 +123,7 @@ for name in fileNames:
     old_prob = prob
 
     for j in range(len(prob[strat2])):
-        prob[strat2][j] = freqs[strat2][j] / (sum(freqs[strat2]) - freqs[strat2][j])
+        prob[strat2][j] = freqs[strat2][j] / (sum(freqs[strat2])) #- freqs[strat2][j])
         prob[strat2][j] = prob[strat2][j] + _PRE[strat2][j]  # toglierlo?
     prob[strat2] = u.normalize(prob[strat2])
             # if prob(obs | thetanew) > prob(obs | thetaold), update
