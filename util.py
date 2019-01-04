@@ -34,11 +34,13 @@ def get_obs(filename):
             continue
             # break
         observation_a1 = get_movetype(data, agent=1, roundNr=i)
+       # print(observation_a1)
         if not 'agent2' in data['bids'][i].keys():
             # OBSERVATIONS.append([observation_a1, 'ACCEPT'])
             continue
             # break
         observation_a2 = get_movetype(data, agent=2, roundNr=i)
+        #print(observation_a2)
         # observation_a1 = movetype_to_number(observation_a1)
         # observation_a2 = movetype_to_number(observation_a2)
         OBSERVATIONS.append([observation_a1, observation_a2])
@@ -59,7 +61,7 @@ def get_movetype(data, agent, roundNr):
         new_own_bid = data['bids'][roundNr][name].split(',')
         equal = True
         for i in range(len(prev_own_bid)):
-            if (prev_own_bid[i] != new_own_bid[i]):
+            if prev_own_bid[i] != new_own_bid[i]:
                 equal = False
                 break
         if equal:
@@ -74,34 +76,46 @@ def get_movetype(data, agent, roundNr):
     opp_util_new_own_bid = get_utility(data, roundNr, opponent, agent)
 
     self_diff = util_new_own_bid - util_prev_own_bid
+   # print(self_diff)
     opp_diff = opp_util_new_own_bid - opp_util_prev_own_bid
+    #print(opp_diff)
     # if both utilities change by very little it is a silent move
-    if 0 < abs(self_diff) < 0.05 and 0 < abs(opp_diff) < 0.05:
+    if 0 <= abs(self_diff) < 0.01 and 0 <= abs(opp_diff) < 0.01:
         return _SILENT
-    if abs(self_diff) == 0.0:
+    if (self_diff < 0) and (opp_diff >= 0):
+        return _CONCEDE
+    if (self_diff <= 0) and (opp_diff < 0):
+        return _UNFORTUNATE
+    if (self_diff > 0) and (opp_diff > 0):
+        return _FORTUNATE
+    if (self_diff > 0) and (opp_diff <= 0):
+        return _SELFISH
+    if (abs(self_diff) == 0) and (opp_diff > 0):
+        return _NICE
+    #if abs(self_diff) == 0.0:
         # If our utility is the same and opponent is worse it is a selfish move
-        if opp_diff < 0:
-            return _SELFISH
-        else:
+     #   if opp_diff < 0:
+      #      return _SELFISH
+       # else:
             # If our utility is the same and opponent is better it is a concession
             # We don't have nice moves
-            return _NICE
+        #    return _NICE
     # self is worse
-    elif self_diff < 0:
+    #elif self_diff < 0:
         # If our and opponent's utility is worse it is unfortunate
-        if opp_diff <= 0:
-            return _UNFORTUNATE
-        else:
+     #   if opp_diff < 0:
+        #    return _UNFORTUNATE
+      #  else:
             # If ours is worse and opponent is better it is a concession
-            return _CONCEDE
+       #     return _CONCEDE
     # self is better
-    else:
+    #else:
         # If ours is better and opponent is worse it is selfish
-        if opp_diff <= 0:
-            return _SELFISH
-        else:
+     #   if opp_diff <= 0:
+      #      return _SELFISH
+       # else:
             # If ours and opponent is better it is fortunate
-            return _FORTUNATE
+        #    return _FORTUNATE
 
 
 
@@ -215,7 +229,7 @@ def filtering(t_matrix, o_matrix, p0, observations):
         #print('fw is \n', fw)
 
         obs = np.diag(o_matrix[observations[i], :])
-
+        #print(obs)
         f_row_vec = np.matrix(fw[:, i])
         fw[:, i + 1] = f_row_vec * np.matrix(t_matrix) * np.matrix(obs)
         fw[:, i + 1] = fw[:, i + 1] / np.sum(fw[:, i + 1])
