@@ -16,6 +16,24 @@ def prob_sequence(obs, prob, strat, x):
     return p
 
 
+def better(prob, old_prob, strat, x):
+    better = True
+    for obs in observations[strat]:
+        #print(strat, obs)
+        p_new = 1
+        p_old = 1
+        for i in range(len(obs)):
+            a = obs[i][x]
+            a = u.movetype_to_number(a)
+
+            p_new = p_new * prob[strat][a]
+            p_old = p_old * old_prob[strat][a]
+        if p_old > p_new:
+            better = False
+            break
+    print(better)
+    return better
+
 # name variables
 _CONCEDE = 'concede'
 _SILENT = 'silent'
@@ -42,7 +60,12 @@ _PRE = {
     _RANDOM: [0.2, 0.2, 0.15, 0.15, 0.1, 0.05, 0.15],
     _TFT: [0.2, 0.2, 0.15, 0.1, 0.1, 0.15, 0.1]
 }
-
+observations = {
+    _CONCEDER: [],
+    _HARDHEADED: [],
+    _RANDOM: [],
+    _TFT: []
+}
 
 
 prob = {
@@ -68,11 +91,14 @@ for name in fileNames:
     freqs[_RANDOM] = [1, 1, 1, 1, 1, 1, 1]
 
     old_prob = prob
-
+    pprint(old_prob)
     strategy_names = name.split('.')[0].split('_')
     strat1 = u.get_strat_name(strategy_names[0])
     strat2 = u.get_strat_name(strategy_names[1])
     obs = u.get_obs(name)
+
+    observations[strat1].append(obs)
+    observations[strat2].append(obs)
 
     for i in range(len(obs)):
         a1 = obs[i][0]
@@ -83,22 +109,32 @@ for name in fileNames:
 
         freqs[strat1][a1] += 1
         freqs[strat2][a2] += 1
-    pprint(freqs)
+    #pprint(freqs)
     for j in range(len(prob[strat1])):
-        prob[strat1][j] = freqs[strat1][j] / (sum(freqs[strat1])-freqs[strat1][j])
+        prob[strat1][j] = freqs[strat1][j] / (sum(freqs[strat1]) - freqs[strat1][j])
+        prob[strat1][j] = prob[strat1][j] + _PRE[strat1][j]  # toglierlo?
     prob[strat1] = u.normalize(prob[strat1])
             # if prob(obs | thetanew) > prob(obs | thetaold), update
-    if prob_sequence(obs, prob, strat1, 0) < prob_sequence(obs, old_prob, strat1, 0):
+    #if prob_sequence(obs, prob, strat1, 0) < prob_sequence(obs, old_prob, strat1, 0):
+     #   prob = old_prob
+    if not better(prob, old_prob, strat1, 0):
         prob = old_prob
-    #old_prob = prob <------ maybe do this here?
+        print('no update')
+    old_prob = prob
 
     for j in range(len(prob[strat2])):
-        prob[strat2][j] = freqs[strat2][j] / (sum(freqs[strat2])-freqs[strat2][j])
+        prob[strat2][j] = freqs[strat2][j] / (sum(freqs[strat2]) - freqs[strat2][j])
+        prob[strat2][j] = prob[strat2][j] + _PRE[strat2][j]  # toglierlo?
     prob[strat2] = u.normalize(prob[strat2])
             # if prob(obs | thetanew) > prob(obs | thetaold), update
-    if prob_sequence(obs, prob, strat2, 1) < prob_sequence(obs, old_prob, strat2, 1):
+    #if prob_sequence(obs, prob, strat2, 1) < prob_sequence(obs, old_prob, strat2, 1):
+     #   prob = old_prob
+    if not better(prob, old_prob, strat2, 1):
         prob = old_prob
+        print('no update')
 
+
+    pprint(prob)
 print("Concede-selfish-fortune-unfortune-nice-silent-unchange")
 
 pprint(prob)
