@@ -25,7 +25,7 @@ training_folder = os.path.join(fileDir, 'training_logs')
 # get movetypes from @filename and return them in a list
 def get_obs(filename):
     OBSERVATIONS = []
-    # name = filename.split('.')[0].split('_')
+
     with open(folderPath + filename) as f:
         data = json.load(f)
     for i in range(len(data['bids'])):
@@ -34,15 +34,13 @@ def get_obs(filename):
             continue
             # break
         observation_a1 = get_movetype(data, agent=1, roundNr=i)
-       # print(observation_a1)
+
         if not 'agent2' in data['bids'][i].keys():
             # OBSERVATIONS.append([observation_a1, 'ACCEPT'])
             continue
             # break
         observation_a2 = get_movetype(data, agent=2, roundNr=i)
-        #print(observation_a2)
-        # observation_a1 = movetype_to_number(observation_a1)
-        # observation_a2 = movetype_to_number(observation_a2)
+
         OBSERVATIONS.append([observation_a1, observation_a2])
     return OBSERVATIONS
 
@@ -76,9 +74,9 @@ def get_movetype(data, agent, roundNr):
     opp_util_new_own_bid = get_utility(data, roundNr, opponent, agent)
 
     self_diff = util_new_own_bid - util_prev_own_bid
-   # print(self_diff)
+
     opp_diff = opp_util_new_own_bid - opp_util_prev_own_bid
-    #print(opp_diff)
+
     # if both utilities change by very little it is a silent move
     if 0 <= abs(self_diff) < 0.01 and 0 <= abs(opp_diff) < 0.01:
         return _SILENT
@@ -92,31 +90,6 @@ def get_movetype(data, agent, roundNr):
         return _SELFISH
     if (abs(self_diff) == 0) and (opp_diff > 0):
         return _NICE
-    #if abs(self_diff) == 0.0:
-        # If our utility is the same and opponent is worse it is a selfish move
-     #   if opp_diff < 0:
-      #      return _SELFISH
-       # else:
-            # If our utility is the same and opponent is better it is a concession
-            # We don't have nice moves
-        #    return _NICE
-    # self is worse
-    #elif self_diff < 0:
-        # If our and opponent's utility is worse it is unfortunate
-     #   if opp_diff < 0:
-        #    return _UNFORTUNATE
-      #  else:
-            # If ours is worse and opponent is better it is a concession
-       #     return _CONCEDE
-    # self is better
-    #else:
-        # If ours is better and opponent is worse it is selfish
-     #   if opp_diff <= 0:
-      #      return _SELFISH
-       # else:
-            # If ours and opponent is better it is fortunate
-        #    return _FORTUNATE
-
 
 
 # gets the utility of @agent in @roundNr for bid given by @bidder
@@ -146,7 +119,6 @@ def get_utility(data, roundNr, agent, bidder):
 
 # Convert string movetype @m to number
 def movetype_to_number(m):
-    # print(m)
     if m == _CONCEDE:
         return 0
     if m == _SELFISH:
@@ -226,10 +198,8 @@ def filtering(t_matrix, o_matrix, p0, observations):
     fw[:, 0] = p0
 
     for i in range(observations.size):
-        #print('fw is \n', fw)
-
         obs = np.diag(o_matrix[observations[i], :])
-        #print(obs)
+
         f_row_vec = np.matrix(fw[:, i])
         fw[:, i + 1] = f_row_vec * np.matrix(t_matrix) * np.matrix(obs)
         fw[:, i + 1] = fw[:, i + 1] / np.sum(fw[:, i + 1])
@@ -239,7 +209,7 @@ def filtering(t_matrix, o_matrix, p0, observations):
 
 def create_observations(filename, agent):
     obs = []
-    # name = filename.split('.')[0].split('_')
+
     with open(filename) as f:
         data = json.load(f)
     for i in range(len(data['bids'])):
@@ -253,15 +223,13 @@ def create_observations(filename, agent):
             continue
             # break
         observation_a2 = get_movetype(data, agent=2, roundNr=i)
-        # observation_a1 = movetype_to_number(observation_a1)
-        # observation_a2 = movetype_to_number(observation_a2)
+
         obs.append([observation_a1, observation_a2])
-    #print(obs)
+
     observations = []
     for i in range(len(obs)):
         a1 = obs[i][agent]
-        # print(a1)
         a1 = movetype_to_number(a1)
         observations.append(a1)
-    #print(observations)
+
     return observations
