@@ -1,7 +1,8 @@
 import numpy as np
 import json
 import os
-from pprint import pprint
+
+# This file contains all the useful methods used both for training and testing
 
 # name variables
 _CONCEDE = 'concede'
@@ -17,32 +18,29 @@ _HARDHEADED = 'hardheaded'
 _RANDOM = 'random'
 _TFT = 'tft'
 
-fileDir = os.path.dirname(os.path.realpath('__file__'))
-folderPath = os.path.join(fileDir, 'training_logs/')
-training_folder = os.path.join(fileDir, 'training_logs')
 
-
-# get movetypes from @filename and return them in a list
+# get movetypes (i.e. observations) from @filename and return them in a list
 def get_obs(filename):
-    OBSERVATIONS = []
+    observations = []
 
-    with open(folderPath + filename) as f:
+    with open(filename) as f:
         data = json.load(f)
     for i in range(len(data['bids'])):
-        if not 'agent1' in data['bids'][i].keys():
-            # OBSERVATIONS.append(['ACCEPT', 'None'])
+        if 'agent1' not in data['bids'][i].keys():
+            # bid is 'Accept'
             continue
-            # break
+
         observation_a1 = get_movetype(data, agent=1, roundNr=i)
 
-        if not 'agent2' in data['bids'][i].keys():
-            # OBSERVATIONS.append([observation_a1, 'ACCEPT'])
+        if 'agent2' not in data['bids'][i].keys():
+            # bid is 'Accept'
             continue
-            # break
+
         observation_a2 = get_movetype(data, agent=2, roundNr=i)
 
-        OBSERVATIONS.append([observation_a1, observation_a2])
-    return OBSERVATIONS
+        observations.append([observation_a1, observation_a2])
+
+    return observations
 
 
 # get movetype for @agent in @roundNr
@@ -53,7 +51,7 @@ def get_movetype(data, agent, roundNr):
         opponent = 2
         name = 'agent1'
 
-    # if the new bid as exactly the same as the new one the bid is unchanged
+    # if the new bid is exactly the same as the new one the bid is unchanged
     try:
         prev_own_bid = data['bids'][roundNr - 1][name].split(',')
         new_own_bid = data['bids'][roundNr][name].split(',')
@@ -67,17 +65,17 @@ def get_movetype(data, agent, roundNr):
     except Exception:
         pass
 
-    util_prev_own_bid = get_utility(data, roundNr - 1, agent, agent)
-    util_new_own_bid = get_utility(data, roundNr, agent, agent)
+    util_prev_own_bid = get_utility(data, roundNr - 1, agent)
+    util_new_own_bid = get_utility(data, roundNr, agent)
 
-    opp_util_prev_own_bid = get_utility(data, roundNr - 1, opponent, agent)
-    opp_util_new_own_bid = get_utility(data, roundNr, opponent, agent)
+    opp_util_prev_own_bid = get_utility(data, roundNr - 1, opponent)
+    opp_util_new_own_bid = get_utility(data, roundNr, opponent)
 
     self_diff = util_new_own_bid - util_prev_own_bid
 
     opp_diff = opp_util_new_own_bid - opp_util_prev_own_bid
 
-    # if both utilities change by very little it is a silent move
+    # classification of the move
     if 0 <= abs(self_diff) < 0.01 and 0 <= abs(opp_diff) < 0.01:
         return _SILENT
     if (self_diff < 0) and (opp_diff >= 0):
@@ -93,14 +91,12 @@ def get_movetype(data, agent, roundNr):
 
 
 # gets the utility of @agent in @roundNr for bid given by @bidder
-def get_utility(data, roundNr, agent, bidder):
-    # agentName = 'agent1'
+def get_utility(data, roundNr, agent):
     profile = data['Utility1']
     bidder = 'agent1'
     if agent == 2:
         # agentName = 'agent2'
         profile = data['Utility2']
-    if bidder == 2:
         bidder = 'agent2'
     try:
         bid = data['bids'][roundNr][bidder].split(',')
@@ -180,19 +176,7 @@ def normalize(arr):
     return out
 
 
-# Takes two lists of equal length as arguments
-# Adds the two lists element by element and returns the normalized result
-def combine_and_normalize(list1, list2):
-    if len(list1) != len(list2):
-        print("LISTS MUST BE SAME LENGTH")
-        return
-    out = []
-    for i in range(len(list1)):
-        out.append(list1[i] + list2[i])
-    out = normalize(out)
-    return out
-
-
+# Implements the filtering algorithm
 def filtering(t_matrix, o_matrix, p0, observations):
     fw = np.zeros((p0.size, observations.size + 1))
     fw[:, 0] = p0
@@ -207,24 +191,9 @@ def filtering(t_matrix, o_matrix, p0, observations):
     return fw
 
 
+# Returns observations as a list of integer representing the moves of @agent
 def create_observations(filename, agent):
-    obs = []
-
-    with open(filename) as f:
-        data = json.load(f)
-    for i in range(len(data['bids'])):
-        if not 'agent1' in data['bids'][i].keys():
-            # OBSERVATIONS.append(['ACCEPT', 'None'])
-            continue
-            # break
-        observation_a1 = get_movetype(data, agent=1, roundNr=i)
-        if not 'agent2' in data['bids'][i].keys():
-            # OBSERVATIONS.append([observation_a1, 'ACCEPT'])
-            continue
-            # break
-        observation_a2 = get_movetype(data, agent=2, roundNr=i)
-
-        obs.append([observation_a1, observation_a2])
+    obs = get_obs(filename)
 
     observations = []
     for i in range(len(obs)):
@@ -233,3 +202,37 @@ def create_observations(filename, agent):
         observations.append(a1)
 
     return observations
+
+
+# help method that check if the new model is better than the previous one, using filtering
+def better(p, old_p, t_matrix, p0, observations):
+
+    isbetter = True
+
+    # check the prediction for each strategy
+    for strategy in ['conceder', 'hardheaded', 'random', 'tft']:
+        # and for each observations sequence of that strategy moves seen so far
+        for observ in observations[strategy]:
+
+            # transform the observations in integers
+            ob = []
+            for k in range(len(observ)):
+                m1 = movetype_to_number(observ[k])
+                ob.append(m1)
+            ob = np.array(ob)
+
+            # do filtering with the new model
+            o_mat_new = np.array([p['conceder'], p['hardheaded'], p['random'], p['tft']])
+            fw_new = filtering(t_matrix, o_mat_new.transpose(), p0, ob)
+
+            # do filtering with the old model
+            o_mat_old = np.array([old_p['conceder'], old_p['hardheaded'], old_p['random'], old_p['tft']])
+            fw_old = filtering(t_matrix, o_mat_old.transpose(), p0, ob)
+
+            s = strategy_to_number(strategy)
+
+            # check which result is better
+            if fw_new[s, ob.size] <= fw_old[s, ob.size]:
+                isbetter = False
+                break
+    return isbetter
